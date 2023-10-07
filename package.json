@@ -17,6 +17,7 @@
     "lodash": "^4.17.21",
     "puppeteer": "^21.3.8",
     "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-recaptcha": "^3.6.8",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "devDependencies": {

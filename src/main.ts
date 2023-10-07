@@ -3,18 +3,26 @@ import vanilla_puppeteer from "puppeteer"
 import { addExtra } from "puppeteer-extra"
 import path from "path"
 import fs from "fs/promises"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
 
 // https://www.zenrows.com/blog/puppeteer-avoid-detection
 // https://www.zenrows.com/blog/puppeteer-stealth
 // https://www.zenrows.com/blog/puppeteer-cloudflare-bypass
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
-const puppeteer = addExtra(vanilla_puppeteer);
+const puppeteer = addExtra(vanilla_puppeteer)
+puppeteer.use(StealthPlugin());
 
 (async () => {
   const browser = await puppeteer.launch({ headless: false })
   const page = await browser.newPage()
-  page.setUserAgent(UA)
+  await page.setUserAgent(UA)
+  // three cookies pairs
+  await page.setCookie(
+    { name: "frontend-rmt", value: "QJXOu5EprRK52J2%2BpjqGycmk4QDZCGZZUNkiYE%2FHgO1C%2BqkCyvaRFSbBIpjrb7%2Bt", domain: "www.v2ph.com", path: "/" },
+    { name: "frontend-rmu", value: "cLTfhhL9yAZK0NhBf9%2BoJd4dU52w4A%3D%3D", domain: "www.v2ph.com", path: "/" },
+    { name: "frontend", value: "d0a408e2963bc250dad8781429015fd5", domain: "www.v2ph.com", path: "/" },
+  )
   await page.setExtraHTTPHeaders({
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Encoding": "gzip, deflate, br",
@@ -34,7 +42,7 @@ const puppeteer = addExtra(vanilla_puppeteer);
   // just inline the source map
   const browser_js_path = path.join(build_path, "browser.js")
   const stat = await fs.stat(browser_js_path)
-  if (stat.isFile()){
+  if (stat.isFile()) {
     await page.addScriptTag({ path: browser_js_path })
   } else {
     console.log("browser.js not found")

@@ -6,13 +6,15 @@ import { handle_images, get_navigation } from "./handle"
     const uris = new Set();
 
     (async () => {
-      const lists = document.getElementsByClassName("photos-list")
-      for (let list of lists) {
-        const imgs = list.querySelectorAll("img")
-        await handle_images(imgs, uris)
-      }
       const pages = get_navigation()
-      console.log(pages)
+      for (let page of pages) {
+
+      }
+      // const lists = document.getElementsByClassName("photos-list")
+      // for (let list of lists) {
+      //   const imgs = list.querySelectorAll("img")
+      //   await handle_images(imgs, uris)
+      // }
     })()
   }
 })()
