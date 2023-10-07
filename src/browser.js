@@ -18,7 +18,6 @@ import { handle_images, get_navigation, get_images_links } from "./handle"
         const text = await resp.text()
         const parser = new DOMParser()
         const dom = parser.parseFromString(text, "text/html")
-        const scripts = dom.querySelectorAll("script")
         const photo_lists = dom.querySelectorAll(".photos-list")[0]
         if (photo_lists == undefined) {
           console.warn(`no photos-list in ${page.toString()}`)
@@ -27,13 +26,6 @@ import { handle_images, get_navigation, get_images_links } from "./handle"
         primary_list.insertAdjacentElement("afterend", photo_lists)
         const sleep_ms = random(300, 1000)
         console.log(`sleeping ${sleep_ms}ms`)
-        for (let s of scripts) {
-          if (s.textContent.length == 0) {
-            continue
-          }
-          console.log(`evaluating ${s.textContent.length} bytes in ${page.toString()}`)
-          eval(s.textContent)
-        }
         await new Promise((resolve, reject) => {
           setTimeout(() => {
             resolve()
