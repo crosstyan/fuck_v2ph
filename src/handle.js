@@ -81,41 +81,4 @@ function create_button(onclick) {
   first.appendChild(btn)
 }
 
-// https://github.com/Tampermonkey/tampermonkey/issues/1113
-// https://www.tampermonkey.net/documentation.php?locale=en
-// https://gist.github.com/ccloli/832a8350b822f3ff5094
-async function main() {
-  const uris = new Set()
-  create_button(async () => {
-    await force_to_bottom(5000, 100)
-    // https://github.com/hoothin/UserScripts/blob/master/Pagetual/pagetual.user.js
-    const lists = document.getElementsByClassName("photos-list")
-    for (let list of lists) {
-      const imgs = list.querySelectorAll("img")
-      await handle_images(imgs, uris)
-    }
-    for (let uri of uris) {
-      const name = uri.split("/").pop()
-      console.log(`try to download ${uri} as ${name}`)
-      GM_download({
-        url: uri,
-        name: name,
-        onload: () => {
-          console.log(`downloaded ${uri} as ${name}`)
-        },
-        onerror: (err) => {
-          console.error(`failed to download ${uri}; error: ${err.error}; details: ${err.details}`)
-        },
-        conflictAction: "overwrite",
-      })
-    }
-  })
-}
-
-
-(function () {
-  'use strict'
-  main()
-})()
-
 export { handle_images }
