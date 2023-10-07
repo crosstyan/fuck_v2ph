@@ -1,5 +1,4 @@
-import { handle_images } from "./handle"
-
+import { handle_images, get_navigation } from "./handle"
 
 (async ()=>{
   if (document != undefined) {
@@ -12,6 +11,8 @@ import { handle_images } from "./handle"
         const imgs = list.querySelectorAll("img")
         await handle_images(imgs, uris)
       }
+      const pages = get_navigation()
+      console.log(pages)
     })()
   }
 })()

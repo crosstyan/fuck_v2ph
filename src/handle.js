@@ -9,6 +9,8 @@
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
+import { range, clone } from "lodash"
+
 /**
  * @description Scroll to every image link to trick the script to load image from CDN
  * 
@@ -81,4 +83,36 @@ function create_button(onclick) {
   first.appendChild(btn)
 }
 
-export { handle_images }
+/**
+ * @description get all page links
+ * 
+ * @returns {URL[]}
+ */
+function get_navigation() {
+  const nav = document.querySelectorAll("nav .page-link")
+  // no idea why capital A
+  /** @type {HTMLAnchorElement[]} */
+  const linkElems = Array.of(...nav).filter((e) => e.tagName.toLowerCase() === "a")
+  const links = linkElems.map((e) => new URL(e.href))
+  /** @type {number[]} */
+  const pages = []
+  if (links.length === 0) {
+    return []
+  }
+  for (const link of links) {
+    if (link.searchParams.has("page")) {
+      pages.push(parseInt(link.searchParams.get("page")))
+    }
+  }
+  if (pages.length === 0) {
+    return []
+  }
+  const first = links[0]
+  const baseUrl = `${first.origin}${first.pathname}`
+  const maxPage = Math.max(...pages)
+  const pageNumbers = range(1, maxPage + 1)
+  const pageLinks = pageNumbers.map((n) => new URL(`${baseUrl}?page=${n}`))
+  return pageLinks
+}
+
+export { handle_images, get_navigation }

@@ -6,17 +6,21 @@
   "scripts": {
     "build": "tsc -p .",
     "watch": "tsc -p . -w",
-    "start": "node ./build/main.js"
+    "start": "node ./build/main.js",
+    "esbuild": "esbuild ./src/browser.js --bundle --minify --sourcemap --outdir=./build --sourcemap=inline",
+    "esbuild_watch": "esbuild ./src/browser.js --bundle --minify --sourcemap --outdir=./build/dist --sourcemap=inline --watch"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "lodash": "^4.17.21",
     "puppeteer": "^21.3.8",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.199",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
     "@typescript-eslint/parser": "^6.7.4",
     "esbuild": "^0.19.4",
