@@ -1,0 +1,20 @@
+{
+  "name": "fuck_v2ph",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -p . -w",
+    "start": "node ./build/main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^21.3.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
