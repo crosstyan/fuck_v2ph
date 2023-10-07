@@ -16,6 +16,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "blob-util": "^2.0.2",
     "lodash": "^4.17.21",
     "puppeteer": "^21.3.8",
     "puppeteer-extra": "^3.3.6",

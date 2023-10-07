@@ -1,4 +1,5 @@
 import { random } from "lodash";
+import { imgSrcToBlob } from "blob-util";
 import { handle_images, get_navigation, get_images_links } from "./handle"
 
 (async () => {
@@ -17,6 +18,11 @@ import { handle_images, get_navigation, get_images_links } from "./handle"
         const resp = await fetch(page)
         const text = await resp.text()
         const parser = new DOMParser()
+        // https://github.com/tuupola/lazyload
+        // https://github.com/tuupola/lazyload/blob/d3ad81c12332a0f950c6c703ff975b60350405a4/lazyload.js#L113
+        // This is how lazyload works: trigger a non fetch (CORS) so
+        // [Sec-Fetch-Dest: image] and [Sec-Fetch-Mode: no-cors] are set
+        // (secured headers field)
         const dom = parser.parseFromString(text, "text/html")
         const photo_lists = dom.querySelectorAll(".photos-list")[0]
         if (photo_lists == undefined) {
@@ -39,7 +45,8 @@ import { handle_images, get_navigation, get_images_links } from "./handle"
         uris.add(...image_links)
       }
       console.log(`total ${uris.size} images`)
-      const resp = await fetch(uris.values().next().value)
+      const l = Array.from(uris)
+      const resp = await imgSrcToBlob(l[0], "image/jpeg", "anonymous")
       console.log(resp)
     })()
   }
