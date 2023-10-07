@@ -1,5 +1,4 @@
 import { random } from "lodash";
-import { imgSrcToBlob } from "blob-util";
 import { handle_images, get_navigation, get_images_links } from "./handle"
 
 (async () => {
@@ -46,8 +45,8 @@ import { handle_images, get_navigation, get_images_links } from "./handle"
       }
       console.log(`total ${uris.size} images`)
       const l = Array.from(uris)
-      const resp = await imgSrcToBlob(l[0], "image/jpeg", "anonymous")
-      console.log(resp)
+      // const resp = await imgSrcToBlob(l[0], "image/jpeg", "anonymous")
+      // console.log(resp)
     })()
   }
 })()
