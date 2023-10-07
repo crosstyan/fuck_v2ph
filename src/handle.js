@@ -9,7 +9,27 @@
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
-import { range, clone } from "lodash"
+import { range } from "lodash"
+
+/**
+ * @description Extract image uris
+ * 
+ * @param {Element[] | NodeListOf<Element>} imgs 
+ * @returns {string[]}
+ */
+function get_images_links(imgs){
+  /** @type {string[]} */
+  const ret = []
+  for (let img of imgs) {
+    /** @type {string} */
+    let data_src = img.attributes["data-src"]
+    if (typeof data_src !== "string"){
+      data_src = data_src.textContent
+    }
+    ret.push(data_src)
+  }
+  return ret
+}
 
 /**
  * @description Scroll to every image link to trick the script to load image from CDN
@@ -115,4 +135,4 @@ function get_navigation() {
   return pageLinks
 }
 
-export { handle_images, get_navigation }
+export { handle_images, get_navigation, get_images_links }

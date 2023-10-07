@@ -1,5 +1,5 @@
 import { random } from "lodash";
-import { handle_images, get_navigation } from "./handle"
+import { handle_images, get_navigation, get_images_links } from "./handle"
 
 (async () => {
   if (document != undefined) {
@@ -43,8 +43,12 @@ import { handle_images, get_navigation } from "./handle"
       const lists = document.getElementsByClassName("photos-list")
       for (let list of lists) {
         const imgs = list.querySelectorAll("img")
-        await handle_images(imgs, uris)
+        const image_links = get_images_links(imgs)
+        uris.add(...image_links)
       }
+      console.log(`total ${uris.size} images`)
+      const resp = await fetch(uris.values().next().value)
+      console.log(resp)
     })()
   }
 })()
