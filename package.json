@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc -p .",
-    "watch": "tsc -p . -w",
+    "build:tsc": "tsc -p .",
+    "watch:tsc": "tsc -p . -w",
     "start": "node ./build/main.js",
-    "esbuild": "esbuild ./src/browser.js --bundle --minify --sourcemap --outdir=./build --sourcemap=inline",
-    "esbuild_watch": "esbuild ./src/browser.js --bundle --minify --sourcemap --outdir=./build/dist --sourcemap=inline --watch"
+    "build:esbuild": "esbuild ./src/browser.js --bundle --minify --sourcemap --outdir=./build --sourcemap=inline",
+    "watch:esbuild": "esbuild ./src/browser.js --bundle --minify --sourcemap --outdir=./build/dist --sourcemap=inline --watch"
   },
   "keywords": [],
   "author": "",
