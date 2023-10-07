@@ -3,8 +3,10 @@
     "module": "NodeNext",
     "outDir": "build",
     "baseUrl": ".",
+    "allowJs": true,
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "build"
   ]
 }

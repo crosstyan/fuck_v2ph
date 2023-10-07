@@ -1,9 +1,41 @@
-import puppeteer from "puppeteer";
+// That's a default export, so you could just name it whatever you want
+import vanilla_puppeteer from "puppeteer"
+import { addExtra } from "puppeteer-extra"
+import pluginStealth from "puppeteer-extra-plugin-stealth"
+import { handle_images } from "./handle"
+
+// https://www.zenrows.com/blog/puppeteer-avoid-detection
+// https://www.zenrows.com/blog/puppeteer-stealth
+// https://www.zenrows.com/blog/puppeteer-cloudflare-bypass
+
+const puppeteer = addExtra(vanilla_puppeteer);
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: false });
-  const page = await browser.newPage();
-  await page.goto("https://www.v2ph.com/album/ae35963a.html");
+  const browser = await puppeteer.launch({ headless: false })
+  const page = await browser.newPage()
+  await page.setExtraHTTPHeaders({
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "ja-JP,ja;q=0.9,zh-CN;q=0.8,zh;q=0.7,en-US;q=0.6,en;q=0.5",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
+    "Sec-Ch-Ua": `"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"`,
+    "Sec-Ch-Ua-Platform": "Windows",
+  })
+  await page.setViewport({ width: 1280, height: 960 })
+  await page.goto("https://www.v2ph.com/album/ae35963a.html", { waitUntil: "domcontentloaded" })
+  await page.evaluate(() => {
+    if (document != undefined) {
+      const uris = new Set<string>();
+
+      (async () => {
+        const lists = document.getElementsByClassName("photos-list")
+        for (let list of lists) {
+          const imgs = list.querySelectorAll("img")
+          await handle_images(imgs, uris)
+        }
+      })()
+    }
+  })
 
   // await browser.close();
 })()
