@@ -1,9 +1,10 @@
 // That's a default export, so you could just name it whatever you want
-import vanilla_puppeteer from "puppeteer"
+import vanilla_puppeteer, { HTTPRequest } from "puppeteer"
 import { addExtra } from "puppeteer-extra"
 import path from "path"
 import fs from "fs/promises"
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
+import { BehaviorSubject, zip, map, pipe, combineLatestAll, filter } from "rxjs"
 import repl from "node:repl"
 
 // https://www.zenrows.com/blog/puppeteer-avoid-detection
@@ -36,23 +37,50 @@ puppeteer.use(StealthPlugin());
   // https://pptr.dev/api/puppeteer.page.exposefunction
   // https://stackoverflow.com/questions/12709074/how-do-you-explicitly-set-a-new-property-on-window-in-typescript
   await page.exposeFunction("customLog", (msg: string) => console.log(msg))
+  // here's how you get a cookie... nice job typescript :(
+  type Cookie = Awaited<ReturnType<typeof page.cookies>>
+  const requestStream = new BehaviorSubject<HTTPRequest | null>(null)
+  const cookiesStream = new BehaviorSubject<Cookie | null>(null)
+
+  interface CookieAndHeader {
+    cookies: Record<string, string>
+    headers: Record<string, string>
+  }
+
+  // Key is url
+  type PrettyItem = [string, CookieAndHeader]
+
   // https://pptr.dev/api/puppeteer.pageevent
   page.on("request", (request) => {
     if (request.resourceType() === "image") {
       // record all image requests
-      const header = request.headers()
-      console.log(request.url(), header);
-      (async ()=>{
-        const cookies = await page.cookies()
-        const cookiesRecord: Record<string, string> = {}
-        // since we get our cookies we could serialize them and save them for later use 
-        cookies.forEach((cookie) => {
-          cookiesRecord[cookie.name] = cookie.value
-        })
-        console.log(request.url(), cookiesRecord)
-      })()
       // now we have the header, we could just emulate the request with other tools
+      requestStream.next(request);
+      (async () => {
+        const cookies = await page.cookies()
+        cookiesStream.next(cookies)
+      })()
     }
+  })
+
+  const whereNotNull = filter((el: any) => el != undefined)
+
+  // https://www.digitalocean.com/community/tutorials/rxjs-operators-forkjoin-zip-combinelatest-withlatestfrom
+  const pretty = zip(requestStream.pipe(whereNotNull), cookiesStream.pipe(whereNotNull)).pipe(
+    map(([request, cookies]) => {
+      const cookiesRecord: Record<string, string> = {}
+      // since we get our cookies we could serialize them and save them for later use 
+      cookies.forEach((cookie) => {
+        cookiesRecord[cookie.name] = cookie.value
+      })
+      const header = request.headers()
+      return [request.url(), { cookies: cookiesRecord, headers: header }] as PrettyItem
+    }
+    ))
+
+  pretty.subscribe((item) => {
+    const [url, p] = item
+    console.log(url, p)
   })
 
   const loaded = page.goto("https://www.v2ph.com/album/ae35963a.html", { waitUntil: "domcontentloaded" })
