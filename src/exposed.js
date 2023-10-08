@@ -1,7 +1,7 @@
 /** 
  * @description Exposed nodejs log function from puppeteer
  * 
- * @type {(message?: any, ...optionalParams: any[]) => void | undefined} 
+ * @type {(message?: any, ...optionalParams: any[]) => Promise<void>} 
  * */
 const terminalLog = (window.customLog != undefined) ? window.customLog : undefined
 
@@ -9,7 +9,7 @@ const terminalLog = (window.customLog != undefined) ? window.customLog : undefin
 /**
  * @description Log to both nodejs and browser, if nodejs is available
  * 
- * @type {(message?: any, ...optionalParams: any[]) => void | undefined} 
+ * @type {(message?: any, ...optionalParams: any[]) => void} 
  */
 const bothLog = (message, ...optionalParams) => {
   console.log(message, ...optionalParams)
