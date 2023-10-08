@@ -21,7 +21,8 @@ puppeteer.use(StealthPlugin());
   await page.setCookie(
     { name: "frontend-rmt", value: "QJXOu5EprRK52J2%2BpjqGycmk4QDZCGZZUNkiYE%2FHgO1C%2BqkCyvaRFSbBIpjrb7%2Bt", domain: "www.v2ph.com", path: "/" },
     { name: "frontend-rmu", value: "cLTfhhL9yAZK0NhBf9%2BoJd4dU52w4A%3D%3D", domain: "www.v2ph.com", path: "/" },
-    { name: "frontend", value: "d0a408e2963bc250dad8781429015fd5", domain: "www.v2ph.com", path: "/" },
+    // should be refreshed every session
+    { name: "frontend", value: "ab5026e08e6333893a0e5c5bc20b5172", domain: "www.v2ph.com", path: "/" },
   )
   await page.setExtraHTTPHeaders({
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -33,7 +34,12 @@ puppeteer.use(StealthPlugin());
   })
   await page.setViewport({ width: 1280, height: 960 })
 
-  await page.goto("https://www.v2ph.com/album/ae35963a.html", { waitUntil: "domcontentloaded" })
+  // https://github.com/puppeteer/puppeteer/issues/2331
+  // https://pptr.dev/api/puppeteer.page.exposefunction
+  // https://stackoverflow.com/questions/12709074/how-do-you-explicitly-set-a-new-property-on-window-in-typescript
+  await page.exposeFunction("customLog", (msg: string) => console.log(msg))
+
+  const loaded = page.goto("https://www.v2ph.com/album/ae35963a.html", { waitUntil: "domcontentloaded" })
   // https://github.com/puppeteer/puppeteer/issues/3570
   // https://github.com/puppeteer/puppeteer/issues/985
   const build_path = path.join(__dirname, "..", "build", "dist")
@@ -43,9 +49,8 @@ puppeteer.use(StealthPlugin());
   const browser_js_path = path.join(build_path, "browser.js")
   const stat = await fs.stat(browser_js_path)
   if (stat.isFile()) {
-    await page.addScriptTag({ path: browser_js_path })
+    await loaded.then(() => page.addScriptTag({ path: browser_js_path }))
   } else {
     console.log("browser.js not found")
   }
-  // await browser.close();
 })()

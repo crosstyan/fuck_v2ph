@@ -1,5 +1,6 @@
-import { random } from "lodash";
+import { random } from "lodash"
 import { handle_images, get_navigation, get_images_links } from "./handle"
+import { bothLog } from "./exposed";
 
 (async () => {
   if (document != undefined) {
@@ -23,30 +24,25 @@ import { handle_images, get_navigation, get_images_links } from "./handle"
         // [Sec-Fetch-Dest: image] and [Sec-Fetch-Mode: no-cors] are set
         // (secured headers field)
         const dom = parser.parseFromString(text, "text/html")
-        const photo_lists = dom.querySelectorAll(".photos-list")[0]
-        if (photo_lists == undefined) {
+        const photo_list = dom.querySelectorAll(".photos-list")[0]
+        if (photo_list == undefined) {
           console.warn(`no photos-list in ${page.toString()}`)
           continue
         }
-        primary_list.insertAdjacentElement("afterend", photo_lists)
+        const imgs = photo_list.querySelectorAll("img")
+        const image_links = get_images_links(imgs)
+        image_links.forEach((link) => { uris.add(link) })
         const sleep_ms = random(300, 1000)
-        console.log(`sleeping ${sleep_ms}ms`)
+        bothLog(`[${page}] sleeping ${sleep_ms}ms`)
+        bothLog(`[${page}] ${image_links.length} images`)
         await new Promise((resolve, reject) => {
           setTimeout(() => {
             resolve()
           }, sleep_ms)
         })
       }
-      const lists = document.getElementsByClassName("photos-list")
-      for (let list of lists) {
-        const imgs = list.querySelectorAll("img")
-        const image_links = get_images_links(imgs)
-        uris.add(...image_links)
-      }
-      console.log(`total ${uris.size} images`)
       const l = Array.from(uris)
-      // const resp = await imgSrcToBlob(l[0], "image/jpeg", "anonymous")
-      // console.log(resp)
+      bothLog(l)
     })()
   }
 })()
