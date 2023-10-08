@@ -44,8 +44,7 @@ puppeteer.use(StealthPlugin());
       console.log(request.url(), header);
       (async ()=>{
         const cookies = await page.cookies()
-        /** @type {Record<string, string>} */
-        const cookiesRecord = {}
+        const cookiesRecord: Record<string, string> = {}
         // since we get our cookies we could serialize them and save them for later use 
         cookies.forEach((cookie) => {
           cookiesRecord[cookie.name] = cookie.value
