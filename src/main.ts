@@ -64,9 +64,10 @@ puppeteer.use(StealthPlugin());
   })
 
   const whereNotNull = filter((el: any) => el != undefined)
+  const onlyV2ph = filter((req:HTTPRequest) => req.url().includes("v2ph"))
 
   // https://www.digitalocean.com/community/tutorials/rxjs-operators-forkjoin-zip-combinelatest-withlatestfrom
-  const pretty = zip(requestStream.pipe(whereNotNull), cookiesStream.pipe(whereNotNull)).pipe(
+  const pretty = zip(requestStream.pipe(whereNotNull, onlyV2ph), cookiesStream.pipe(whereNotNull)).pipe(
     map(([request, cookies]) => {
       const cookiesRecord: Record<string, string> = {}
       // since we get our cookies we could serialize them and save them for later use 
