@@ -18,4 +18,11 @@ const bothLog = (message, ...optionalParams) => {
   }
 }
 
-export { terminalLog, bothLog }
+/**
+ * @description Add url to the list of urls to be downloaded
+ * 
+ * @type {(url: string) => Promise<void>} 
+ */
+const addUrl = (window.addUrl != undefined) ? window.addUrl : undefined
+
+export { terminalLog, bothLog, addUrl }

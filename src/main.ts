@@ -4,7 +4,8 @@ import { addExtra } from "puppeteer-extra"
 import path from "path"
 import fs from "fs/promises"
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
-import { BehaviorSubject, zip, map, pipe, combineLatestAll, filter } from "rxjs"
+import { clone } from "lodash"
+import { BehaviorSubject, zip, map, pipe, combineLatestAll, filter, MonoTypeOperatorFunction, scan, reduce, debounce, interval, debounceTime, merge, throttleTime } from "rxjs"
 import repl from "node:repl"
 
 // https://www.zenrows.com/blog/puppeteer-avoid-detection
@@ -24,7 +25,7 @@ puppeteer.use(StealthPlugin());
     { name: "frontend-rmu", value: "cLTfhhL9yAZK0NhBf9%2BoJd4dU52w4A%3D%3D", domain: "www.v2ph.com", path: "/" },
     // should be refreshed every session... but how to get it?
     // Cookies that 'expire at end of the session' expire unpredictably from the user's perspective!
-    { name: "frontend", value: "ab5026e08e6333893a0e5c5bc20b5172", domain: "www.v2ph.com", path: "/" },
+    { name: "frontend", value: "51d5a600c690c12087ee6f6b8ff4e26d", domain: "www.v2ph.com", path: "/" },
   )
   await page.setExtraHTTPHeaders({
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -41,6 +42,8 @@ puppeteer.use(StealthPlugin());
   type Cookie = Awaited<ReturnType<typeof page.cookies>>
   const requestStream = new BehaviorSubject<HTTPRequest | null>(null)
   const cookiesStream = new BehaviorSubject<Cookie | null>(null)
+  const urlStream = new BehaviorSubject<string | null>(null)
+  await page.exposeFunction("addUrl", (msg: string) => urlStream.next(msg))
 
   interface CookieAndHeader {
     cookies: Record<string, string>
@@ -63,11 +66,20 @@ puppeteer.use(StealthPlugin());
     }
   })
 
-  const whereNotNull = filter((el: any) => el != undefined)
-  const onlyV2ph = filter((req:HTTPRequest) => req.url().includes("v2ph"))
+  // a dumb function to make typescript happy...
+  // kind of make sense if you consider C++
+  // where the compiler would generate different functions for different types
+  function mkWhereNotNull<T>(): MonoTypeOperatorFunction<T> {
+    return filter((el) => el != undefined)
+  }
+  const onlyV2ph = filter((req: HTTPRequest) => req.url().includes("v2ph"))
+  const onlyPhotosInPath = filter((req: HTTPRequest) => req.url().includes("photos"))
 
   // https://www.digitalocean.com/community/tutorials/rxjs-operators-forkjoin-zip-combinelatest-withlatestfrom
-  const pretty = zip(requestStream.pipe(whereNotNull, onlyV2ph), cookiesStream.pipe(whereNotNull)).pipe(
+  // https://gili842.medium.com/rxjs-advance-filter-input-implementation-15bfc90faf9f
+  const zipped = zip(requestStream.pipe(mkWhereNotNull(), onlyV2ph, onlyPhotosInPath), cookiesStream.pipe(mkWhereNotNull()))
+  const nonNullUrl = urlStream.pipe(mkWhereNotNull())
+  const pretty = zipped.pipe(
     map(([request, cookies]) => {
       const cookiesRecord: Record<string, string> = {}
       // since we get our cookies we could serialize them and save them for later use 
@@ -79,9 +91,56 @@ puppeteer.use(StealthPlugin());
     }
     ))
 
+
+  interface LogOutput {
+    images: string[]
+    requests: Record<string, CookieAndHeader>
+  }
+
+  const initRecord: LogOutput = {
+    images: [],
+    requests: {}
+  }
+  const record = merge(pretty, nonNullUrl).pipe(
+    scan((acc, item) => {
+      const c = clone(acc)
+      if (typeof item === "string") {
+        c.images.push(item)
+      } else {
+        c.requests[item[0]] = item[1]
+      }
+      return c
+    }, initRecord),
+    debounceTime(5000)
+  )
+
   pretty.subscribe((item) => {
     const [url, p] = item
     console.log(url, p)
+  })
+
+  nonNullUrl.subscribe((url) => {
+    console.log(`[image] ${url}`)
+  })
+
+  record.subscribe({
+    next: (r) => {
+      if (r.images.length === 0 || Object.keys(r.requests).length === 0) {
+        console.warn("no image or request filled")
+        return
+      }
+      const now = new Date()
+      const fileName = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.log.json`;
+      (async () => {
+        const p = path.join(__dirname, fileName)
+        const file = await fs.open(p, "w")
+        await file.write(JSON.stringify(r))
+        console.log(`write to ${p}`)
+        await file.close()
+      })()
+    },
+    complete: () => console.log("[record] complete"),
+    error: (err) => console.error("[record] ", err)
   })
 
   const loaded = page.goto("https://www.v2ph.com/album/ae35963a.html", { waitUntil: "domcontentloaded" })

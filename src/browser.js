@@ -1,6 +1,6 @@
 import { random } from "lodash"
 import { handle_images, get_navigation, get_images_links } from "./handle"
-import { bothLog } from "./exposed";
+import { bothLog, addUrl } from "./exposed";
 
 (async () => {
   if (document != undefined) {
@@ -31,7 +31,10 @@ import { bothLog } from "./exposed";
         }
         const imgs = photo_list.querySelectorAll("img")
         const image_links = get_images_links(imgs)
-        image_links.forEach((link) => { uris.add(link) })
+        image_links.forEach((link) => { 
+          uris.add(link)
+          addUrl(link)
+        })
         const sleep_ms = random(300, 1000)
         bothLog(`[${page}] sleeping ${sleep_ms}ms`)
         bothLog(`[${page}] ${image_links.length} images`)
@@ -41,8 +44,8 @@ import { bothLog } from "./exposed";
           }, sleep_ms)
         })
       }
-      const l = Array.from(uris)
-      bothLog(l)
+      // const l = Array.from(uris)
+      // bothLog(l)
     })()
   }
 })()
