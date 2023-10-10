@@ -25,7 +25,7 @@ puppeteer.use(StealthPlugin());
     { name: "frontend-rmu", value: "cLTfhhL9yAZK0NhBf9%2BoJd4dU52w4A%3D%3D", domain: "www.v2ph.com", path: "/" },
     // should be refreshed every session... but how to get it?
     // Cookies that 'expire at end of the session' expire unpredictably from the user's perspective!
-    { name: "frontend", value: "51d5a600c690c12087ee6f6b8ff4e26d", domain: "www.v2ph.com", path: "/",  },
+    { name: "frontend", value: "0d411d466197bf0d25a37310a4b064cf", domain: "www.v2ph.com", path: "/",  },
   )
   await page.setExtraHTTPHeaders({
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -46,6 +46,8 @@ puppeteer.use(StealthPlugin());
   await page.exposeFunction("addUrl", (msg: string) => urlStream.next(msg))
 
   interface RequestRecord {
+    // ISO 8601
+    timestamp: string
     cookies: Cookies
     headers: Record<string, string>
   }
@@ -113,14 +115,16 @@ puppeteer.use(StealthPlugin());
         c.images.push(item)
       } else {
         const [request, cookies] = item
+        const now = new Date()
         c.requests[request.url()] = {
+          timestamp: now.toISOString(),
           cookies: cookies,
           headers: request.headers()
         }
       }
       return c
     }, initRecord),
-    debounceTime(5000)
+    debounceTime(3000)
   )
 
   pretty.subscribe((item) => {
