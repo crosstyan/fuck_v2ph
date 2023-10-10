@@ -25,7 +25,7 @@ puppeteer.use(StealthPlugin());
     { name: "frontend-rmu", value: "cLTfhhL9yAZK0NhBf9%2BoJd4dU52w4A%3D%3D", domain: "www.v2ph.com", path: "/" },
     // should be refreshed every session... but how to get it?
     // Cookies that 'expire at end of the session' expire unpredictably from the user's perspective!
-    { name: "frontend", value: "51d5a600c690c12087ee6f6b8ff4e26d", domain: "www.v2ph.com", path: "/" },
+    { name: "frontend", value: "51d5a600c690c12087ee6f6b8ff4e26d", domain: "www.v2ph.com", path: "/",  },
   )
   await page.setExtraHTTPHeaders({
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -39,19 +39,24 @@ puppeteer.use(StealthPlugin());
   // https://stackoverflow.com/questions/12709074/how-do-you-explicitly-set-a-new-property-on-window-in-typescript
   await page.exposeFunction("customLog", (msg: string) => console.log(msg))
   // here's how you get a cookie... nice job typescript :(
-  type Cookie = Awaited<ReturnType<typeof page.cookies>>
+  type Cookies = Awaited<ReturnType<typeof page.cookies>>
   const requestStream = new BehaviorSubject<HTTPRequest | null>(null)
-  const cookiesStream = new BehaviorSubject<Cookie | null>(null)
+  const cookiesStream = new BehaviorSubject<Cookies | null>(null)
   const urlStream = new BehaviorSubject<string | null>(null)
   await page.exposeFunction("addUrl", (msg: string) => urlStream.next(msg))
 
-  interface CookieAndHeader {
+  interface RequestRecord {
+    cookies: Cookies
+    headers: Record<string, string>
+  }
+
+  interface PrettyValue {
     cookies: Record<string, string>
     headers: Record<string, string>
   }
 
   // Key is url
-  type PrettyItem = [string, CookieAndHeader]
+  type PrettyItem = [string, PrettyValue]
 
   // https://pptr.dev/api/puppeteer.pageevent
   page.on("request", (request) => {
@@ -94,20 +99,24 @@ puppeteer.use(StealthPlugin());
 
   interface LogOutput {
     images: string[]
-    requests: Record<string, CookieAndHeader>
+    requests: Record<string, RequestRecord>
   }
 
   const initRecord: LogOutput = {
     images: [],
     requests: {}
   }
-  const record = merge(pretty, nonNullUrl).pipe(
+  const record = merge(zipped, nonNullUrl).pipe(
     scan((acc, item) => {
       const c = clone(acc)
       if (typeof item === "string") {
         c.images.push(item)
       } else {
-        c.requests[item[0]] = item[1]
+        const [request, cookies] = item
+        c.requests[request.url()] = {
+          cookies: cookies,
+          headers: request.headers()
+        }
       }
       return c
     }, initRecord),
@@ -126,7 +135,7 @@ puppeteer.use(StealthPlugin());
   record.subscribe({
     next: (r) => {
       if (r.images.length === 0 || Object.keys(r.requests).length === 0) {
-        console.warn("no image or request filled")
+        console.warn("[record] no image or request filled")
         return
       }
       const now = new Date()
@@ -135,7 +144,7 @@ puppeteer.use(StealthPlugin());
         const p = path.join(__dirname, fileName)
         const file = await fs.open(p, "w")
         await file.write(JSON.stringify(r))
-        console.log(`write to ${p}`)
+        console.log(`[record] write to ${p}`)
         await file.close()
       })()
     },
