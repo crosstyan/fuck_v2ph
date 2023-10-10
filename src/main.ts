@@ -145,7 +145,8 @@ puppeteer.use(StealthPlugin());
       const now = new Date()
       const fileName = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.log.json`;
       (async () => {
-        const p = path.join(__dirname, fileName)
+        const pwd = process.cwd()
+        const p = path.join(pwd, fileName)
         const file = await fs.open(p, "w")
         await file.write(JSON.stringify(r))
         console.log(`[record] write to ${p}`)
