@@ -1,6 +1,6 @@
 import { random } from "lodash"
 import { handle_images, get_navigation, get_images_links } from "./handle"
-import { bothLog, addUrl } from "./exposed";
+import { bothLog, addUrl, saveCookies } from "./exposed";
 
 (async () => {
   if (document != undefined) {

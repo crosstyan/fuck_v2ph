@@ -5,9 +5,12 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
-  blob-util:
-    specifier: ^2.0.2
-    version: 2.0.2
+  commander:
+    specifier: ^11.0.0
+    version: 11.0.0
+  devtools-protocol:
+    specifier: ^0.0.1208070
+    version: 0.0.1208070
   lodash:
     specifier: ^4.17.21
     version: 4.17.21
@@ -698,10 +701,6 @@ packages:
     engines: {node: '>=10.0.0'}
     dev: false
 
-  /blob-util@2.0.2:
-    resolution: {integrity: sha512-T7JQa+zsXXEa6/8ZhHcQEW1UFfVM49Ts65uBkFL6fz2QmrElqmbajIDJvuA0tEhRe5eIjpV9ZF+0RfZR9voJFQ==}
-    dev: false
-
   /brace-expansion@1.1.11:
     resolution: {integrity: sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==}
     dependencies:
@@ -805,6 +804,11 @@ packages:
     dependencies:
       delayed-stream: 1.0.0
     dev: true
+
+  /commander@11.0.0:
+    resolution: {integrity: sha512-9HMlXtt/BNoYr8ooyjjNRdIilOTkVJXB+GhxMTtOKwk0R4j4lS4NpjuqmRxroBfnfTSHQIHQB7wryHhXarNjmQ==}
+    engines: {node: '>=16'}
+    dev: false
 
   /concat-map@0.0.1:
     resolution: {integrity: sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=}
@@ -935,6 +939,10 @@ packages:
 
   /devtools-protocol@0.0.1179426:
     resolution: {integrity: sha512-KKC7IGwdOr7u9kTGgjUvGTov/z1s2H7oHi3zKCdR9eSDyCPia5CBi4aRhtp7d8uR7l0GS5UTDw3TjKGu5CqINg==}
+    dev: false
+
+  /devtools-protocol@0.0.1208070:
+    resolution: {integrity: sha512-/EvUwj0LhFOhLA9aN4U/WDCrovpX4Hsse2/i83tHInKSX10RHTutdjWhswTQEr8G4jMTy1o2qNHMpMgfIsBgCQ==}
     dev: false
 
   /dir-glob@3.0.1:

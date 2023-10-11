@@ -7,10 +7,32 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { clone } from "lodash"
 import { BehaviorSubject, zip, map, pipe, combineLatestAll, filter, MonoTypeOperatorFunction, scan, reduce, debounce, interval, debounceTime, merge, throttleTime } from "rxjs"
 import repl from "node:repl"
+import { program } from "commander"
+import { Protocol } from 'devtools-protocol'
 
 // https://www.zenrows.com/blog/puppeteer-avoid-detection
 // https://www.zenrows.com/blog/puppeteer-stealth
 // https://www.zenrows.com/blog/puppeteer-cloudflare-bypass
+
+// https://chromedevtools.github.io/devtools-protocol/tot/Network/#type-Cookie
+type Cookies = Protocol.Network.Cookie[]
+
+const default_cookies_path = "cookies.log.json"
+program.name("dumb-crawler").description("a dumb crawler for v2ph.com")
+program.option("-c, --cookies <file>", "a file path to load cookies from", default_cookies_path)
+program.parse()
+
+const opts = program.opts()
+let cookies_path: string = opts.cookies
+if (cookies_path === default_cookies_path) {
+  console.log(`cookies path not specified, use default: ${default_cookies_path}`)
+} else {
+  if (typeof cookies_path !== "string") {
+    console.error(`cookies path should be a string. get ${cookies_path} (${typeof cookies_path})`)
+    process.exit(1)
+  }
+  console.log(`using cookies path: ${cookies_path}`)
+}
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
 const puppeteer = addExtra(vanilla_puppeteer)
@@ -20,13 +42,28 @@ puppeteer.use(StealthPlugin());
   const browser = await puppeteer.launch({ headless: false })
   const page = await browser.newPage()
   await page.setUserAgent(UA)
-  await page.setCookie(
-    { name: "frontend-rmt", value: "QJXOu5EprRK52J2%2BpjqGycmk4QDZCGZZUNkiYE%2FHgO1C%2BqkCyvaRFSbBIpjrb7%2Bt", domain: "www.v2ph.com", path: "/" },
-    { name: "frontend-rmu", value: "cLTfhhL9yAZK0NhBf9%2BoJd4dU52w4A%3D%3D", domain: "www.v2ph.com", path: "/" },
-    // should be refreshed every session... but how to get it?
-    // Cookies that 'expire at end of the session' expire unpredictably from the user's perspective!
-    { name: "frontend", value: "0d411d466197bf0d25a37310a4b064cf", domain: "www.v2ph.com", path: "/",  },
-  )
+  let isFile = false
+  try {
+    isFile = (await fs.stat(cookies_path)).isFile()
+  } catch { isFile = false }
+  if (isFile) {
+    try {
+      const raw_cookies = await fs.readFile(cookies_path, { encoding: "utf-8" })
+      const cookies = JSON.parse(raw_cookies) as Protocol.Network.Cookie[]
+      if (!Array.isArray(cookies)) {
+        console.error("cookies should be an array")
+      }
+      const cookies_record: Record<string, string> = {}
+      cookies.forEach((cookie) => { cookies_record[cookie.name] = cookie.value })
+      console.log("loaded cookies", cookies_record)
+      await page.setCookie(...cookies)
+    } catch (err) {
+      console.error(err)
+    }
+  } else {
+    console.warn("cookies not found. skip loading cookies.")
+  }
+
   await page.setExtraHTTPHeaders({
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Encoding": "gzip, deflate, br",
@@ -37,9 +74,28 @@ puppeteer.use(StealthPlugin());
   // https://github.com/puppeteer/puppeteer/issues/2331
   // https://pptr.dev/api/puppeteer.page.exposefunction
   // https://stackoverflow.com/questions/12709074/how-do-you-explicitly-set-a-new-property-on-window-in-typescript
+  // https://stackoverflow.com/questions/11580961/sending-command-line-arguments-to-npm-script
   await page.exposeFunction("customLog", (msg: string) => console.log(msg))
-  // here's how you get a cookie... nice job typescript :(
-  type Cookies = Awaited<ReturnType<typeof page.cookies>>
+
+  /**
+   * @description Save cookies to a file
+   * 
+   * @param cookie_path path to save cookies. if not specified, save to `cookies.log.json` in current working directory
+   */
+  const saveCookies = (cookie_path: string = null) => {
+    if (cookie_path == undefined) {
+      const cwd = process.cwd()
+      cookie_path = path.join(cwd, "cookies.log.json")
+    }
+    const p = new Promise<Cookies>(async (resolve, reject) => {
+      const cookies = await page.cookies()
+      console.log(`cookies save to ${cookie_path}`)
+      await fs.writeFile(cookie_path, JSON.stringify(cookies))
+      resolve(cookies)
+    })
+    return p
+  }
+  await page.exposeFunction("saveCookies", saveCookies)
   const requestStream = new BehaviorSubject<HTTPRequest | null>(null)
   const cookiesStream = new BehaviorSubject<Cookies | null>(null)
   const urlStream = new BehaviorSubject<string | null>(null)
@@ -151,6 +207,7 @@ puppeteer.use(StealthPlugin());
         await file.write(JSON.stringify(r))
         console.log(`[record] write to ${p}`)
         await file.close()
+        await saveCookies()
       })()
     },
     complete: () => console.log("[record] complete"),
@@ -168,6 +225,7 @@ puppeteer.use(StealthPlugin());
   const stat = await fs.stat(browser_js_path)
   if (stat.isFile()) {
     // honestly I prefer to use this instead of page.evaluate
+    console.log(`load browser.js from ${browser_js_path}`)
     await loaded.then(() => page.addScriptTag({ path: browser_js_path }))
   } else {
     console.log("browser.js not found")
@@ -176,4 +234,5 @@ puppeteer.use(StealthPlugin());
   server.context.puppeteer = puppeteer
   server.context.browser = browser
   server.context.page = page
+  server.context.saveCookies = saveCookies
 })()

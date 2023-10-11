@@ -25,4 +25,12 @@ const bothLog = (message, ...optionalParams) => {
  */
 const addUrl = (window.addUrl != undefined) ? window.addUrl : undefined
 
-export { terminalLog, bothLog, addUrl }
+/**
+ * @description Save cookie to be used in the browser
+ * 
+ * @see https://chromedevtools.github.io/devtools-protocol/tot/Network/#type-Cookie
+ * @type {() => Promise<Protocol.Network.Cookie[]>} 
+ */
+const saveCookies = (window.saveCookies != undefined) ? window.saveCookies : undefined
+
+export { terminalLog, bothLog, addUrl, saveCookies }
