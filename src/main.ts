@@ -21,6 +21,7 @@ const default_cookies_path = "cookies.log.json"
 program.name("dumb-crawler").description("a dumb crawler for v2ph.com")
 program.option("-c, --cookies <file>", "a file path to load cookies from", default_cookies_path)
 program.option("-u, --url <url>", "a url to load")
+program.option("-k, --keep", "keep the browser open after the program ends")
 program.parse()
 
 const opts = program.opts()
@@ -49,6 +50,10 @@ if (opts.url == undefined) {
     console.error(`url should be a v2ph.com url. get ${target_url}`)
     process.exit(1)
   }
+}
+let keep: boolean = false
+if (opts.keep != undefined) {
+  keep = true
 }
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
@@ -233,6 +238,10 @@ puppeteer.use(StealthPlugin());
         console.log(`[record] write to ${p}`)
         await file.close()
         await saveCookies()
+        if (!keep) {
+          await browser.close()
+          process.exit(0)
+        }
       })()
     },
     complete: () => console.log("[record] complete"),
