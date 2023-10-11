@@ -33,4 +33,11 @@ const addUrl = (window.addUrl != undefined) ? window.addUrl : undefined
  */
 const saveCookies = (window.saveCookies != undefined) ? window.saveCookies : undefined
 
+/**
+ * @description Print cookie to be used in the browser in NodeJS
+ * 
+ * @type {() => Promise<Protocol.Network.Cookie[]>} 
+ */
+const printCookies = (window.printCookies != undefined) ? window.printCookies : undefined
+
 export { terminalLog, bothLog, addUrl, saveCookies }

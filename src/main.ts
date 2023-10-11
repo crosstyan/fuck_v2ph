@@ -20,6 +20,7 @@ type Cookies = Protocol.Network.Cookie[]
 const default_cookies_path = "cookies.log.json"
 program.name("dumb-crawler").description("a dumb crawler for v2ph.com")
 program.option("-c, --cookies <file>", "a file path to load cookies from", default_cookies_path)
+program.option("-u, --url <url>", "a url to load")
 program.parse()
 
 const opts = program.opts()
@@ -32,6 +33,22 @@ if (cookies_path === default_cookies_path) {
     process.exit(1)
   }
   console.log(`using cookies path: ${cookies_path}`)
+}
+
+let target_url : URL | null = null
+if (opts.url == undefined) {
+  console.error("url not specified")
+  process.exit(1)
+} else {
+  if (typeof opts.url !== "string") {
+    console.error(`url should be a string. get ${opts.url} (${typeof opts.url})`)
+    process.exit(1)
+  }
+  target_url = new URL(opts.url)
+  if (!target_url.hostname.includes("v2ph.com")) {
+    console.error(`url should be a v2ph.com url. get ${target_url}`)
+    process.exit(1)
+  }
 }
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
@@ -95,7 +112,16 @@ puppeteer.use(StealthPlugin());
     })
     return p
   }
+
+  const printCookies = () => {
+    const p = new Promise<Cookies>(async (resolve, reject) => {
+      const cookies = await page.cookies()
+      resolve(cookies)
+    })
+    return p
+  }
   await page.exposeFunction("saveCookies", saveCookies)
+  await page.exposeFunction("printCookies", printCookies)
   const requestStream = new BehaviorSubject<HTTPRequest | null>(null)
   const cookiesStream = new BehaviorSubject<Cookies | null>(null)
   const urlStream = new BehaviorSubject<string | null>(null)
@@ -153,7 +179,6 @@ puppeteer.use(StealthPlugin());
       return [request.url(), { cookies: cookiesRecord, headers: header }] as PrettyItem
     }
     ))
-
 
   interface LogOutput {
     images: string[]
@@ -214,7 +239,7 @@ puppeteer.use(StealthPlugin());
     error: (err) => console.error("[record] ", err)
   })
 
-  const loaded = page.goto("https://www.v2ph.com/album/ae35963a.html", { waitUntil: "domcontentloaded" })
+  const loaded = page.goto(target_url.toString(), { waitUntil: "domcontentloaded" })
   // https://github.com/puppeteer/puppeteer/issues/3570
   // https://github.com/puppeteer/puppeteer/issues/985
   const build_path = path.join(__dirname, "..", "build", "dist")
