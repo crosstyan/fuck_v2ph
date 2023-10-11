@@ -1,5 +1,5 @@
 // That's a default export, so you could just name it whatever you want
-import vanilla_puppeteer, { HTTPRequest } from "puppeteer"
+import vanilla_puppeteer, { Browser, HTTPRequest, Page } from "puppeteer"
 import { addExtra } from "puppeteer-extra"
 import path from "path"
 import fs from "fs/promises"
@@ -36,7 +36,7 @@ if (cookies_path === default_cookies_path) {
   console.log(`using cookies path: ${cookies_path}`)
 }
 
-let target_url : URL | null = null
+let target_url: URL | null = null
 if (opts.url == undefined) {
   console.error("url not specified")
   process.exit(1)
@@ -97,14 +97,13 @@ puppeteer.use(StealthPlugin());
   // https://pptr.dev/api/puppeteer.page.exposefunction
   // https://stackoverflow.com/questions/12709074/how-do-you-explicitly-set-a-new-property-on-window-in-typescript
   // https://stackoverflow.com/questions/11580961/sending-command-line-arguments-to-npm-script
-  await page.exposeFunction("customLog", (msg: string) => console.log(msg))
 
   /**
    * @description Save cookies to a file
    * 
    * @param cookie_path path to save cookies. if not specified, save to `cookies.log.json` in current working directory
    */
-  const saveCookies = (cookie_path: string = null) => {
+  const saveCookies = (page:Page, cookie_path: string = null) => {
     if (cookie_path == undefined) {
       const cwd = process.cwd()
       cookie_path = path.join(cwd, "cookies.log.json")
@@ -118,19 +117,27 @@ puppeteer.use(StealthPlugin());
     return p
   }
 
-  const printCookies = () => {
+  const printCookies = (page:Page) => {
     const p = new Promise<Cookies>(async (resolve, reject) => {
       const cookies = await page.cookies()
       resolve(cookies)
     })
     return p
   }
-  await page.exposeFunction("saveCookies", saveCookies)
-  await page.exposeFunction("printCookies", printCookies)
   const requestStream = new BehaviorSubject<HTTPRequest | null>(null)
   const cookiesStream = new BehaviorSubject<Cookies | null>(null)
   const urlStream = new BehaviorSubject<string | null>(null)
-  await page.exposeFunction("addUrl", (msg: string) => urlStream.next(msg))
+  const exposedUtilsFunctions = async (page: Page) => {
+    await Promise.all(
+      [
+        page.exposeFunction("saveCookies", (cookie_path:string) => saveCookies(page, cookie_path)),
+        page.exposeFunction("printCookies", () => printCookies(page)),
+        page.exposeFunction("customLog", (data) => console.log(data)),
+        page.exposeFunction("addUrl", (url:string) => urlStream.next(url))
+      ]
+    )
+  }
+  await exposedUtilsFunctions(page)
 
   interface RequestRecord {
     // ISO 8601
@@ -237,7 +244,7 @@ puppeteer.use(StealthPlugin());
         await file.write(JSON.stringify(r))
         console.log(`[record] write to ${p}`)
         await file.close()
-        await saveCookies()
+        await saveCookies(page)
         if (!keep) {
           await browser.close()
           process.exit(0)
@@ -264,9 +271,18 @@ puppeteer.use(StealthPlugin());
   } else {
     console.log("browser.js not found")
   }
+
+  const newLoginPage = async (browser: Browser) => {
+    const page = await browser.newPage()
+    const loginUrl = "https://v2ph.com/login"
+    await page.goto(loginUrl, { waitUntil: "domcontentloaded" })
+    await exposedUtilsFunctions(page)
+    return page
+  }
   const server = repl.start("> ")
   server.context.puppeteer = puppeteer
   server.context.browser = browser
   server.context.page = page
-  server.context.saveCookies = saveCookies
+  server.context.exposedUtilsFunctions = exposedUtilsFunctions
+  server.context.newLoginPage = newLoginPage
 })()
