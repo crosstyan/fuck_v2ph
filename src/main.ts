@@ -9,6 +9,7 @@ import { BehaviorSubject, zip, map, pipe, combineLatestAll, filter, MonoTypeOper
 import repl from "node:repl"
 import { program } from "commander"
 import { Protocol } from 'devtools-protocol'
+import pino from "pino"
 
 // https://www.zenrows.com/blog/puppeteer-avoid-detection
 // https://www.zenrows.com/blog/puppeteer-stealth
@@ -16,8 +17,20 @@ import { Protocol } from 'devtools-protocol'
 
 // https://chromedevtools.github.io/devtools-protocol/tot/Network/#type-Cookie
 type Cookies = Protocol.Network.Cookie[]
+// https://github.com/pinojs/pino/blob/master/docs/pretty.md
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      levelFirst: true,
+      colorize: true,
+    }
+  },
+  level: "debug",
+  prettyPrint: true
+})
 
-const default_cookies_path = "cookies.log.json"
+const default_cookies_path = "cookies.config.json"
 program.name("dumb-crawler").description("a dumb crawler for v2ph.com")
 program.option("-c, --cookies <file>", "a file path to load cookies from", default_cookies_path)
 program.option("-u, --url <url>", "a url to load")
@@ -27,27 +40,27 @@ program.parse()
 const opts = program.opts()
 let cookies_path: string = opts.cookies
 if (cookies_path === default_cookies_path) {
-  console.log(`cookies path not specified, use default: ${default_cookies_path}`)
+  logger.warn({ err: "cookies path not specified", default: default_cookies_path })
 } else {
   if (typeof cookies_path !== "string") {
-    console.error(`cookies path should be a string. get ${cookies_path} (${typeof cookies_path})`)
+    logger.error({ err: "cookies path should be a string", get: cookies_path, t: typeof cookies_path })
     process.exit(1)
   }
-  console.log(`using cookies path: ${cookies_path}`)
+  logger.info(`using cookies path: ${cookies_path}`)
 }
 
 let target_url: URL | null = null
 if (opts.url == undefined) {
-  console.error("url not specified")
+  logger.error('url not specified')
   process.exit(1)
 } else {
   if (typeof opts.url !== "string") {
-    console.error(`url should be a string. get ${opts.url} (${typeof opts.url})`)
+    logger.error({ err: 'url should be a string', get: opts.url, t: typeof opts.url })
     process.exit(1)
   }
   target_url = new URL(opts.url)
   if (!target_url.hostname.includes("v2ph.com")) {
-    console.error(`url should be a v2ph.com url. get ${target_url}`)
+    logger.error({ err: 'url should be a v2ph.com url', get: target_url.toString() })
     process.exit(1)
   }
 }
@@ -73,17 +86,17 @@ puppeteer.use(StealthPlugin());
       const raw_cookies = await fs.readFile(cookies_path, { encoding: "utf-8" })
       const cookies = JSON.parse(raw_cookies) as Protocol.Network.Cookie[]
       if (!Array.isArray(cookies)) {
-        console.error("cookies should be an array")
+        logger.error("cookies should be an array")
       }
       const cookies_record: Record<string, string> = {}
       cookies.forEach((cookie) => { cookies_record[cookie.name] = cookie.value })
-      console.log("loaded cookies", cookies_record)
+      logger.info({ msg: 'loaded cookies', cookies: cookies_record });
       await page.setCookie(...cookies)
     } catch (err) {
-      console.error(err)
+      logger.error(err)
     }
   } else {
-    console.warn("cookies not found. skip loading cookies.")
+    logger.warn("cookies not found. skip loading cookies.")
   }
 
   await page.setExtraHTTPHeaders({
@@ -103,21 +116,21 @@ puppeteer.use(StealthPlugin());
    * 
    * @param cookie_path path to save cookies. if not specified, save to `cookies.log.json` in current working directory
    */
-  const saveCookies = (page:Page, cookie_path: string = null) => {
+  const saveCookies = (page: Page, cookie_path: string = null) => {
     if (cookie_path == undefined) {
       const cwd = process.cwd()
-      cookie_path = path.join(cwd, "cookies.log.json")
+      cookie_path = path.join(cwd, "cookies.config.json")
     }
     const p = new Promise<Cookies>(async (resolve, reject) => {
       const cookies = await page.cookies()
-      console.log(`cookies save to ${cookie_path}`)
+      logger.info({msg:"cookies save", to: cookie_path})
       await fs.writeFile(cookie_path, JSON.stringify(cookies))
       resolve(cookies)
     })
     return p
   }
 
-  const printCookies = (page:Page) => {
+  const printCookies = (page: Page) => {
     const p = new Promise<Cookies>(async (resolve, reject) => {
       const cookies = await page.cookies()
       resolve(cookies)
@@ -130,10 +143,10 @@ puppeteer.use(StealthPlugin());
   const exposedUtilsFunctions = async (page: Page) => {
     await Promise.all(
       [
-        page.exposeFunction("saveCookies", (cookie_path:string) => saveCookies(page, cookie_path)),
+        page.exposeFunction("saveCookies", (cookie_path: string) => saveCookies(page, cookie_path)),
         page.exposeFunction("printCookies", () => printCookies(page)),
-        page.exposeFunction("customLog", (data) => console.log(data)),
-        page.exposeFunction("addUrl", (url:string) => urlStream.next(url))
+        page.exposeFunction("customLog", (data) => logger.info(data)),
+        page.exposeFunction("addUrl", (url: string) => urlStream.next(url))
       ]
     )
   }
@@ -193,19 +206,19 @@ puppeteer.use(StealthPlugin());
     ))
 
   interface LogOutput {
-    images: string[]
+    links: string[]
     requests: Record<string, RequestRecord>
   }
 
   const initRecord: LogOutput = {
-    images: [],
+    links: [],
     requests: {}
   }
   const record = merge(zipped, nonNullUrl).pipe(
     scan((acc, item) => {
       const c = clone(acc)
       if (typeof item === "string") {
-        c.images.push(item)
+        c.links.push(item)
       } else {
         const [request, cookies] = item
         const now = new Date()
@@ -222,17 +235,17 @@ puppeteer.use(StealthPlugin());
 
   pretty.subscribe((item) => {
     const [url, p] = item
-    console.log(url, p)
+    logger.info(url, p)
   })
 
   nonNullUrl.subscribe((url) => {
-    console.log(`[image] ${url}`)
+    logger.info({ tag: "image", url: url })
   })
 
   record.subscribe({
     next: (r) => {
-      if (r.images.length === 0 || Object.keys(r.requests).length === 0) {
-        console.warn("[record] no image or request filled")
+      if (r.links.length === 0 || Object.keys(r.requests).length === 0) {
+        logger.warn({tag:"record", msg:"no image or request filled"})
         return
       }
       const now = new Date()
@@ -242,7 +255,7 @@ puppeteer.use(StealthPlugin());
         const p = path.join(pwd, fileName)
         const file = await fs.open(p, "w")
         await file.write(JSON.stringify(r))
-        console.log(`[record] write to ${p}`)
+        logger.info({tag:"record", msg:"write to file", path:p})
         await file.close()
         await saveCookies(page)
         if (!keep) {
@@ -251,8 +264,8 @@ puppeteer.use(StealthPlugin());
         }
       })()
     },
-    complete: () => console.log("[record] complete"),
-    error: (err) => console.error("[record] ", err)
+    complete: () => logger.info({tag:"record", msg:"complete"}),
+    error: (err) => logger.error({tag:"record", err:err})
   })
 
   const loaded = page.goto(target_url.toString(), { waitUntil: "domcontentloaded" })
@@ -266,10 +279,10 @@ puppeteer.use(StealthPlugin());
   const stat = await fs.stat(browser_js_path)
   if (stat.isFile()) {
     // honestly I prefer to use this instead of page.evaluate
-    console.log(`load browser.js from ${browser_js_path}`)
+    logger.info({msg:"load browser.js", path:browser_js_path})
     await loaded.then(() => page.addScriptTag({ path: browser_js_path }))
   } else {
-    console.log("browser.js not found")
+    logger.error({err:"browser.js not found", path:browser_js_path})
   }
 
   const newLoginPage = async (browser: Browser) => {
