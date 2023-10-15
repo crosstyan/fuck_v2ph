@@ -140,7 +140,7 @@ puppeteer.use(StealthPlugin());
   const requestStream = new BehaviorSubject<HTTPRequest | null>(null)
   const cookiesStream = new BehaviorSubject<Cookies | null>(null)
   const urlStream = new BehaviorSubject<string | null>(null)
-  const exposedUtilsFunctions = async (page: Page) => {
+  const exposeUtilsFunctions = async (page: Page) => {
     await Promise.all(
       [
         page.exposeFunction("saveCookies", (cookie_path: string) => saveCookies(page, cookie_path)),
@@ -150,7 +150,7 @@ puppeteer.use(StealthPlugin());
       ]
     )
   }
-  await exposedUtilsFunctions(page)
+  await exposeUtilsFunctions(page)
 
   interface RequestRecord {
     // ISO 8601
@@ -289,13 +289,13 @@ puppeteer.use(StealthPlugin());
     const page = await browser.newPage()
     const loginUrl = "https://v2ph.com/login"
     await page.goto(loginUrl, { waitUntil: "domcontentloaded" })
-    await exposedUtilsFunctions(page)
+    await exposeUtilsFunctions(page)
     return page
   }
   const server = repl.start("> ")
   server.context.puppeteer = puppeteer
   server.context.browser = browser
   server.context.page = page
-  server.context.exposedUtilsFunctions = exposedUtilsFunctions
+  server.context.exposedUtilsFunctions = exposeUtilsFunctions
   server.context.newLoginPage = newLoginPage
 })()

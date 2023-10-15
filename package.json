@@ -16,18 +16,21 @@
   "author": "",
   "license": "WTFPL",
   "dependencies": {
-    "commander": "^11.0.0",
+    "commander": "^11.1.0",
     "devtools-protocol": "^0.0.1208070",
     "lodash": "^4.17.21",
+    "pino": "^8.16.0",
     "puppeteer": "^21.3.8",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-recaptcha": "^3.6.8",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "rescript": "^10.1.4",
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.199",
-    "@typescript-eslint/eslint-plugin": "^6.7.4",
-    "@typescript-eslint/parser": "^6.7.4",
+    "@typescript-eslint/eslint-plugin": "^6.7.5",
+    "@typescript-eslint/parser": "^6.7.5",
     "concurrently": "^8.2.1",
     "esbuild": "^0.19.4",
     "eslint": "^8.51.0",
