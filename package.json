@@ -6,11 +6,13 @@
   "scripts": {
     "build:tsc": "tsc -p .",
     "watch:tsc": "tsc -p . -w",
-    "start:all": "run-s build:tsc build:esbuild start",
-    "watch:all": "concurrently \"npm:watch:tsc\" \"npm:watch:esbuild\"",
+    "start:all": "run-s build:tsc build:rescript build:esbuild start",
+    "watch:all": "concurrently \"npm:watch:tsc\" \"npm:watch:esbuild\" \"npm:watch:rescript\"",
     "start": "node ./build/main.js",
     "build:esbuild": "esbuild ./src/browser.js --bundle --minify --sourcemap --outdir=./build --sourcemap=inline",
-    "watch:esbuild": "esbuild ./src/browser.js --bundle --minify --sourcemap --outdir=./build/dist --sourcemap=inline --watch"
+    "watch:esbuild": "esbuild ./src/browser.js --bundle --minify --sourcemap --outdir=./build/dist --sourcemap=inline --watch",
+    "build:rescript": "rescript",
+    "watch:rescript": "rescript build -w"
   },
   "keywords": [],
   "author": "",
@@ -24,10 +26,10 @@
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-recaptcha": "^3.6.8",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "rescript": "^10.1.4",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
+    "@glennsl/rescript-fetch": "^0.2.0",
     "@types/lodash": "^4.14.199",
     "@typescript-eslint/eslint-plugin": "^6.7.5",
     "@typescript-eslint/parser": "^6.7.5",
@@ -35,6 +37,8 @@
     "esbuild": "^0.19.4",
     "eslint": "^8.51.0",
     "npm-run-all": "^4.1.5",
+    "rescript": "^11.0.0-rc.4",
+    "rescript-json": "^1.0.6",
     "typescript": "^5.2.2",
     "wait-on": "^7.0.1"
   }

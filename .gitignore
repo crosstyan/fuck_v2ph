@@ -131,3 +131,7 @@ dist
 
 build
 *.log.json
+
+lib
+*.bs.js
+*.gen.ts
