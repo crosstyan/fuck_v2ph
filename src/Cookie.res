@@ -94,7 +94,7 @@ let toJson = (cookie: t) =>
 let fromJson = (json: Js.Json.t): option<t> =>
   switch json {
   | Js.Json.Object(dict) =>
-    switch(
+    switch (
       dict->Js.Dict.get("name"),
       dict->Js.Dict.get("value"),
       dict->Js.Dict.get("domain"),
@@ -122,13 +122,13 @@ let fromJson = (json: Js.Json.t): option<t> =>
         Some(Boolean(httpOnly)),
         Some(Boolean(secure)),
         Some(Boolean(session)),
-        Some(String(sameSite)),
+        sameSite,
         Some(String(priority)),
         Some(Boolean(sameParty)),
         Some(String(sourceScheme)),
         Some(Number(sourcePort)),
-        Some(String(partitionKey)),
-        Some(Boolean(partitionKeyOpaque)),
+        partitionKey,
+        partitionKeyOpaque,
       ) =>
       Some({
         name,
@@ -140,34 +140,39 @@ let fromJson = (json: Js.Json.t): option<t> =>
         httpOnly,
         secure,
         session,
-        sameSite: switch(sameSite) {
-        | "Strict" => Some(#Strict)
-        | "Lax" => Some(#Lax)
-        | "None" => Some(#None)
-        | _ => None
+        sameSite: switch sameSite {
+        | Some(String(site)) =>
+          Some(
+            switch site {
+            | "Strict" => #Strict
+            | "Lax" => #Lax
+            | "None" => #None
+            | _ => failwith("sameSite")
+            },
+          )
+        | None => None
         },
-        priority: switch(priority) {
+        priority: switch priority {
         | "Low" => #Low
         | "Medium" => #Medium
         | "High" => #High
         | _ => failwith("priority")
         },
         sameParty,
-        sourceScheme: switch(sourceScheme) {
+        sourceScheme: switch sourceScheme {
         | "Unset" => #Unset
         | "NonSecure" => #NonSecure
         | "Secure" => #Secure
         | _ => failwith("sourceScheme")
         },
         sourcePort: int_of_float(sourcePort),
-        partitionKey: switch(partitionKey) {
-        | "" => None
-        | _ => Some(partitionKey)
+        partitionKey: switch partitionKey {
+        | Some(String(key)) => Some(key)
+        | None => None
         },
-        partitionKeyOpaque: switch(partitionKeyOpaque) {
-        | true => Some(true)
-        | false => Some(false)
-        | _ => None
+        partitionKeyOpaque: switch partitionKeyOpaque {
+        | Some(Boolean(opaque)) => Some(opaque)
+        | None => None
         },
       })
     }
