@@ -59,11 +59,8 @@ devDependencies:
     specifier: ^4.1.5
     version: 4.1.5
   rescript:
-    specifier: ^11.0.0-rc.4
+    specifier: 11.0.0-rc.4
     version: 11.0.0-rc.4
-  rescript-json:
-    specifier: ^1.0.6
-    version: 1.0.6
   typescript:
     specifier: ^5.2.2
     version: 5.2.2
@@ -2474,10 +2471,6 @@ packages:
   /require-directory@2.1.1:
     resolution: {integrity: sha1-jGStX9MNqxyXbiNE/+f3kqam30I=}
     engines: {node: '>=0.10.0'}
-
-  /rescript-json@1.0.6:
-    resolution: {integrity: sha512-wyJ1sGU2/6Qt5/n8eizZO89x8I9G+I8CXho3ES+xYWwZm4kTQv4stYbnvO07KV4hZbc6exhK4RNROsMbrNb53w==}
-    dev: true
 
   /rescript@11.0.0-rc.4:
     resolution: {integrity: sha512-yh82o30J2/B/IwyPZjM+mc82FdyPkXRjXxlsUVEoyc5Z/snlq3Za2PhJhlfacwk+ui5lcOZsH8SndWPiI21vXg==}
