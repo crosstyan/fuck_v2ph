@@ -44,8 +44,6 @@ import { bothLog, addUrl, saveCookies } from "./exposed";
           }, sleep_ms)
         })
       }
-      // const l = Array.from(uris)
-      // bothLog(l)
     })()
   }
 })()

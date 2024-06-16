@@ -27,7 +27,6 @@ const logger = pino({
     }
   },
   level: "debug",
-  prettyPrint: true
 })
 
 const default_cookies_path = "cookies.config.json"
